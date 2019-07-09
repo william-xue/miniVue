@@ -17,7 +17,10 @@ Observer.prototype = {
             configurable: true,
             get: function() {
                 if (Dep.target) {
-                    dep.addSub(Dep.target);
+                console.log("TCL: Dep.target", Dep.target)
+
+                dep.addSub(Dep.target);
+                
                 }
                 return val;
             },
@@ -39,9 +42,12 @@ function observe(value, vm) {
     return new Observer(value);
 };
 
+
+
 function Dep () {
     this.subs = [];
 }
+
 Dep.prototype = {
     addSub: function(sub) {
         this.subs.push(sub);
