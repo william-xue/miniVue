@@ -9,6 +9,7 @@ function SelfVue (data, el, exp) {
     observe(data);
 
     el.innerHTML = this.data[exp];  // 初始化模板数据的值
+    //初始化的过程中 直接对watch进行new操作
     new Watcher(this, exp, function (value) {
         el.innerHTML = value;
     });  
