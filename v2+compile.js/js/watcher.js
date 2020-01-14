@@ -19,7 +19,7 @@ Watcher.prototype = {
     },
     get: function() {
         Dep.target = this;  // 缓存自己
-        var value = this.vm.data[this.exp]  // 强制执行监听器里的get函数
+        var value = this.vm.data[this.exp]  // 自动触发 强制执行监听器里的get函数 
         Dep.target = null;  // 释放自己
         return value;
     }
