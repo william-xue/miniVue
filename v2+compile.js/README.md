@@ -16,3 +16,5 @@
         Dep.target = null;  // 释放自己
         return value;
 > 是有模版编译的时候 解析 exp 然后 new watch 然后自动触发数据追踪来添加到dep里
+
+ var value = this.vm.data[this.exp] 这种操作 包含两步 this.vm.data[this.exp] 就是 key 先去get下 然后再去赋值
