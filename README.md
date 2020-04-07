@@ -1,8 +1,15 @@
 /*
  * @Author: freeze.xue 
+ * @Date: 2020-04-07 14:57:45 
+ * @Last Modified by: freeze.xue
+ * @Last Modified time: 2020-04-07 14:58:32
+ */
+> 理解下最原始的观察者模式对理解vue的实现很有帮助
+/*
+ * @Author: freeze.xue 
  * @Date: 2019-07-09 15:41:12 
  * @Last Modified by: freeze.xue
- * @Last Modified time: 2019-07-09 15:41:38
+ * @Last Modified time: 2020-04-07 14:56:04
  */
 >1.new调用过程与直接调用的区别 以及 箭头函数
 >2.watch与数据劫持的绑定 这点很巧妙 
