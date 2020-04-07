@@ -10,6 +10,8 @@ function SelfVue (data, el, exp) {
 
     el.innerHTML = this.data[exp];  // 初始化模板数据的值
     //初始化的过程中 直接对watch进行new操作
+    // new Watcher这一步是在observe之后操作的，那怎么实现添加依赖这一步?
+    // 答案是 ： new Watcher的时候 ➡又调用了一次实例的get: this.data[exp]
     new Watcher(this, exp, function (value) {
         el.innerHTML = value;
     });      
