@@ -2,9 +2,10 @@
  * @Author: freeze.xue 
  * @Date: 2020-04-07 14:57:45 
  * @Last Modified by: freeze.xue
- * @Last Modified time: 2020-04-07 14:58:32
+ * @Last Modified time: 2020-04-07 15:33:20
  */
 > 理解下最原始的观察者模式对理解vue的实现很有帮助
+> 这个解析可以看看 https://www.jianshu.com/p/0d807e4752a0
 /*
  * @Author: freeze.xue 
  * @Date: 2019-07-09 15:41:12 
