@@ -1,8 +1,16 @@
 class EventEmitter {
     constructor() {
         // 维护事件及监听者
-        this.listeners = {}
+        this.listeners = {};
+        this.instance = null
     }
+
+    static getInstance() {
+      if(!this.instance) {
+          this.instance = new EventEmitter();
+      }
+      return this.instance;
+  }
     /**
      * 注册事件监听者
      * @param {String} type 事件类型
