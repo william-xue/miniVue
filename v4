@@ -1,0 +1,272 @@
+<html>
+  <head>
+    <title>Mini-Vue3</title>
+  </head>
+  <body>
+    <div id="app"></div>
+    <script>
+      // compile & render system
+
+      // 渲染函数，将函数描述的模版转换为对象表述的json对象
+      function h(tag, props, children) {
+        return {
+          tag,
+          props,
+          children,
+        };
+      }
+
+      // 将指定的vnode装在到container上
+      function mount(vnode, container) {
+        const el = document.createElement(vnode.tag);
+        // 保存vnode的dom引用
+        vnode.el = el;
+
+        // props
+        if (vnode.props) {
+          for (const key in vnode.props) {
+            const value = vnode.props[key];
+            if (key.indexOf("on") === 0) {
+              // 如果属性以on开头则说明是方法
+              const funName = key.substring(2).toLowerCase();
+              el.addEventListener(funName, value);
+            } else {
+              el.setAttribute(key, value);
+            }
+          }
+        }
+
+        // children
+        if (vnode.children) {
+          // 区分字符串还是array，简单处理
+          if (typeof vnode.children === "string") {
+            el.textContent = vnode.children;
+          } else {
+            vnode.children.forEach((child) => {
+              mount(child, el);
+            });
+          }
+        }
+
+        container.appendChild(el);
+      }
+
+      // 比对已有vnode和新node，进行更新
+      function patch(oldNode, newNode) {
+        if (oldNode.tag === newNode.tag) {
+          const el = oldNode.el;
+          newNode.el = oldNode.el;
+          // 如果tag相同，则需要进行下一步的各种判断，props的判断，更新，children的判断，更新
+          // 首先处理props
+          const oldProps = oldNode.props || {};
+          const newProps = newNode.props || {};
+
+          // 首先判断新props，如果旧的有，则更新，无，则添加
+          for (const key in newProps) {
+            const oldValue = oldProps[key];
+            const newValue = newProps[key];
+
+            if (newValue !== oldValue) {
+              // 如果新的与旧的不同，则更新
+              el.setAttribute(key, newValue);
+            }
+          }
+          // 然后判断旧props里面，如果新的没有，则删除
+          for (const key in oldProps) {
+            if (!(key in newProps)) {
+              el.removeAttribute(key);
+            }
+          }
+
+          // 然后将props设置为新
+          oldNode.props = newProps;
+
+          // 接着处理children, 这里我们简单处理，认为children要么是string，要么是array
+          const oldChildren = oldNode.children;
+          const newChildren = newNode.children;
+
+          if (typeof oldChildren === "string") {
+            // 对于旧子节点为string的情况
+            if (typeof newChildren === "string") {
+              // 如果新子节点也是string，则直接替换即可
+              el.textContent = newChildren;
+              oldNode.children = newChildren;
+            } else {
+              // 新节点是array
+              // 清空原有子节点内容
+              el.innerHTML = "";
+              newChildren.forEach((child) => {
+                mount(child, el);
+              });
+              oldNode.children = newChildren;
+            }
+          } else {
+            // 旧节点是array
+            if (typeof newChildren === "string") {
+              el.innerHTML = newChildren;
+              oldNode.children = newChildren;
+            } else {
+              // 两个都是array，就简单处理，只是比对同顺序
+
+              // 先取两个数组同样长度对比，直接patch
+              const sameLength = Math.min(
+                oldChildren.length,
+                newChildren.length
+              );
+              for (let i = 0; i < sameLength; i++) {
+                // 替换新元素
+                patch(oldChildren[i], newChildren[i]);
+              }
+              // 然后如果旧数组还有，则移除多出部分
+              if (oldChildren.length > sameLength) {
+                oldChildren.slice(sameLength).forEach((child) => {
+                  el.removeChild(child.el);
+                });
+              }
+
+              // 如果新数组还有，则添加多出部分
+              if (newChildren.length > sameLength) {
+                newChildren.slice(sameLength).forEach((child) => {
+                  mount(child, el);
+                });
+              }
+            }
+          }
+        } else {
+          // 如果tag都不同，则直接替换即可
+          const parent = oldNode.el.parentNode;
+          mount(newNode, parent);
+          parent.removeChild(oldNode.el);
+          oldNode.el = newNode.el;
+        }
+      }
+
+      // reactive system
+      let activeEffect = null;
+
+      class Dep {
+        subscribers = new Set();
+
+        // 添加依赖
+        depend() {
+          if (activeEffect) {
+            this.subscribers.add(activeEffect);
+          }
+        }
+
+        // 依赖更新，通知回调
+        notify() {
+          this.subscribers.forEach((effect) => {
+            effect();
+          });
+        }
+      }
+
+      /**
+       * @decription 注册事件，当依赖的对象发生改变时，触发effect方法执行
+       */
+      function watchEffect(effect) {
+        activeEffect = effect;
+        effect();
+        activeEffect = null;
+      }
+
+      const targetMap = new WeakMap();
+
+      function getDep(target, key) {
+        // 添加整个对象的依赖
+        let currMap = targetMap.get(target);
+
+        if (!currMap) {
+          currMap = new Map();
+          targetMap.set(target, currMap);
+        }
+
+        // 获取具体key的依赖
+        let dep = currMap.get(key);
+        // 如果没有添加过则添加依赖
+        if (!dep) {
+          dep = new Dep();
+          currMap.set(key, dep);
+        }
+
+        return dep;
+      }
+
+      const reactiveHandlers = {
+        get(target, key, receiver) {
+          const dep = getDep(target, key);
+
+          // 为什么每次读取都要添加依赖，因为有可能会增加新的依赖
+          dep.depend();
+          return Reflect.get(target, key, receiver);
+        },
+        set(target, key, value, receiver) {
+          const dep = getDep(target, key);
+
+          // 类似于之前的Object.set
+          const ret = Reflect.set(target, key, value, receiver);
+
+          // 通知执行依赖
+          dep.notify();
+
+          // 因为proxy的set必须要返回一个boolean的值告诉设置成功与否，因此这里返回系统api的结果即可
+          return ret;
+        },
+      };
+
+      /**
+       * @description 给对象封装并返回响应式代理
+       */
+      function reactive(oldObj) {
+        return new Proxy(oldObj, reactiveHandlers);
+      }
+
+      /**
+       * @description 将组件挂载到dom上
+       */
+      function mountApp(component, container) {
+        // 是否已经挂载过
+        let isMounted = false;
+        let vdom;
+
+        // 注册watchEffect的回调
+        // 如果没有挂载过，则挂载，否则patch
+        watchEffect(() => {
+          if (!isMounted) {
+            vdom = component.render();
+            mount(vdom, container);
+            isMounted = true;
+          } else {
+            const vdom2 = component.render();
+            patch(vdom, vdom2);
+            vdom = vdom2;
+          }
+        });
+      }
+
+      // 我们现在来按照Vue组件的格式定义一个简单的自定义组件
+      const App = {
+        data: reactive({
+          count: 1,
+        }),
+        render() {
+          return h(
+            "div",
+            {
+              onClick: () => {
+                // 添加点击事件方法
+                this.data.count += 1;
+              },
+            },
+            String(this.data.count)
+          ); // 因为前面vdom限定了string
+        },
+      };
+
+      // 接着我们需要通过一个安装的方法来将这个组件挂载并且需要
+      // 在依赖的数据发生变化后重新渲染组件
+      mountApp(App, document.getElementById("app"));
+    </script>
+  </body>
+</html>
